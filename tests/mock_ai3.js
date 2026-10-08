@@ -11,7 +11,7 @@ http.createServer((req, res) => {
     console.log('--- call', calls, '| system 含中文约束:', sys.includes('不得出现英文单词'), '| user 含重试标记:', user.includes('务必用简体中文'));
     res.setHeader('Content-Type', 'application/json');
     const english = 'The board seems to be mid-game but pieces are on starting positions. Black cannons on b8 and h8, red cannons on b3.';
-    const chinese = '建议：把左边的红炮往中路挪两格，先控制中路，再看对方怎么应。';
+    const chinese = '建议：炮二平五先架中炮，把对方的将门锁住；你右翼的车还没出动，下一步记得亮车抢占肋道，别贪吃边卒。';
     res.end(JSON.stringify({ choices: [{ message: { content: user.includes('务必用简体中文') ? chinese : english }, finish_reason: 'stop' }] }));
   });
 }).listen(7094, () => console.log('mock3 up on 7094'));

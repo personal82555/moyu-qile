@@ -10,8 +10,14 @@ const assert = (c, m) => { if (!c) { fail++; console.log('FAIL', m); } else cons
 
 // 象棋
 const g = new Chess();
-assert(g.allLegal('r').length === 41, '红开局走法=41 (got ' + g.allLegal('r').length + ')');
-assert(!g.legal(9,7,'r').some(m => m[2] === 7 && m[3] === 6), '马蹩腿');
+// 标准开局红方 44 步（修复初始摆法后：每方 16 子，底线 车马相仕仕相马车）
+assert(g.allLegal('r').length === 44, '红开局走法=44 (got ' + g.allLegal('r').length + ')');
+// 蹩马腿：腿位 (8,7) 空时马(9,7) 可跳 (7,6)；占住腿位后必须跳不动
+const legFree = g.legal(9,7,'r').some(m => m[2] === 7 && m[3] === 6);
+g.B[8][7] = { t: '兵', s: 'r' };
+const legBlocked = !g.legal(9,7,'r').some(m => m[2] === 7 && m[3] === 6);
+g.B[8][7] = null;
+assert(legFree && legBlocked, '马蹩腿（堵住 (8,7) 后不能跳到 (7,6)）');
 // 炮打隔子：炮(7,1)→黑方向(2,1)有黑炮(2,1)作隔子, 隔子后(0,1)黑马应可达
 assert(g.legal(7,1,'r').some(m => m[2] === 0 && m[3] === 1), '炮隔(2,1)打(0,1)黑马');
 // 马跳
