@@ -108,11 +108,13 @@ function chessClick(r, c) {
     const mv = cg.legal(sel[0], sel[1]).find(m => m[2] === r && m[3] === c);
     if (mv) {
       const killed = cg.B[r][c];
+      if (window.EXTRAS) EXTRAS.markPre('chess');
       cg.apply(mv);
       sel = null;
       const chk = cg.inCheck(cg.redTurn ? 'r' : 'b');
       setStatus('chess-st', (cg.redTurn ? '红' : '黑') + '方行棋' + (chk ? ' · 将军!' : '') + (killed ? '（吃子）' : ''));
       render_chess();
+      if (window.EXTRAS) { setTimeout(() => EXTRAS.stepReview('chess'), 40); if (killed) EXTRAS.taunt('playerEat'); }
       swapTimer();   // 红走完切黑
       if (window.autoSnapshot) autoSnapshot();
       maybeAI();
@@ -151,13 +153,18 @@ function maybeAI(isUndo) {
       if (m) {
         const legal = cg.legal(m[0], m[1], 'b');
         const mv = legal.find(x => x[2] === m[2] && x[3] === m[3]);
-        if (mv) cg.apply(mv);
+        if (mv) { window.__aiCaptured = !!cg.B[mv[2]][mv[3]]; cg.apply(mv); }
         else { const all = cg.allLegal('b'); if (all.length) cg.apply(all[Math.floor(Math.random() * all.length)]); }
       } else {
         const all = cg.allLegal('b');
         if (all.length) cg.apply(all[Math.floor(Math.random() * all.length)]);
       }
       if (checkEnd()) { render_chess(); return; }
+      if (window.EXTRAS) {
+        const aiCaptured = window.__aiCaptured;
+        const givesCheck = cg.inCheck('r');
+        EXTRAS.taunt(givesCheck ? 'check' : (aiCaptured ? 'aiEat' : 'aiMove'));
+      }
       setStatus('chess-st', '轮到你（红方）');
       render_chess();
       if (isUndo) setStatus('chess-st', isUndo);

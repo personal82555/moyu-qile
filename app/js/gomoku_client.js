@@ -48,9 +48,11 @@ function render_gomoku() {
 }
 function gokClick(r, c) {
   if (!gk || gk.over || aiBusy) { if (aiBusy) setStatus('gok-st', '白方 AI 思考中…'); return; }
+  if (window.EXTRAS) EXTRAS.markPre('gomoku');
   if (!gk.place(r, c)) return;
   render_gomoku();
   if (gokEnd()) return;
+  if (window.EXTRAS) setTimeout(() => EXTRAS.stepReview('gomoku'), 40);
   swapTimer();
   if (gok2P()) { setStatus('gok-st', '轮到 ' + (gk.player === 1 ? '黑棋' : '白棋')); if (window.autoSnapshot) autoSnapshot(); if (window.autoCoachIfOn) autoCoachIfOn(); return; }
   aiBusy = true;
@@ -90,6 +92,7 @@ function gokClick(r, c) {
       for (let r = 0; r < gk.N && !done; r++) for (let c = 0; c < gk.N && !done; c++) if (gk.B[r][c] === 0) { gk.place(r, c); done = true; }
     }
     if (gokEnd()) return;
+    if (window.EXTRAS) EXTRAS.taunt('aiMove');
     setStatus('gok-st', '轮到你（黑棋）');
     render_gomoku();
     swapTimer();

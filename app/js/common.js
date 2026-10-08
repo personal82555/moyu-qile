@@ -15,6 +15,7 @@ function ensureGameShell(key) {
       <button class="btn" onclick="showPuzzles()" style="padding:7px 11px;font-size:13px">🎯 残局</button>
       <button class="btn" onclick="showRanks()" style="padding:7px 11px;font-size:13px">🏆 排行</button>
       <button class="btn" onclick="showSaves()" style="padding:7px 11px;font-size:13px">💾 存档</button>
+      <button class="btn" onclick="EXTRAS.panel()" style="padding:7px 11px;font-size:13px;background:#fff4d6;border-color:#f0d28a">✨ 更多功能</button>
       <div class="diff-box" style="padding:5px 9px">
         <label for="timer" style="font-size:12px">⏱ 倒计时</label>
         <select id="timer" onchange="applyTimer()" style="font-size:13px">
@@ -330,6 +331,14 @@ function autoCoachIfOn() {
 }
 
 window.__gameOver = false;   // 本局是否已结束（结束/认输/超时后不再拦截离开）
+function gameStatsFor(k) {
+  try {
+    if (k === 'chess' && typeof cg !== 'undefined' && cg && cg.moves) return [['手数', cg.moves.length + ' 手'], ['用时', fmtDur(gameDurationSec())]];
+    if (k === 'gomoku' && typeof gk !== 'undefined' && gk && gk.seq) return [['落子', gk.seq.length + ' 子'], ['用时', fmtDur(gameDurationSec())]];
+    if (k === 'junqi' && typeof jq !== 'undefined' && jq && jq._hist) return [['步数', jq._hist.length + ' 步'], ['用时', fmtDur(gameDurationSec())]];
+  } catch (e) { }
+  return [['用时', fmtDur(gameDurationSec())]];
+}
 function gameResultPopup(won, title, detail) {
   window.__gameOver = true;
   if (window.clearAutoSnapshot) clearAutoSnapshot();
@@ -345,10 +354,27 @@ function gameResultPopup(won, title, detail) {
     ${detail ? `<div style="color:#666;margin-bottom:10px">${detail}</div>` : ''}
     <div><button class="btn primary" onclick="gameRestart()">⟳ 再来一局</button>
     <button class="btn" onclick="aiReview()">🧠 AI 复盘这盘棋</button>
+    <button class="btn" onclick="EXTRAS.poster(window.__lastGameInfo)">🖼 战绩海报</button>
     <button class="btn" onclick="document.getElementById('result-modal').remove()">关闭</button></div>
+    <div id="daily-result" style="margin-top:10px"></div>
     <div id="review-box" style="display:none;text-align:left;margin-top:12px;padding:10px 12px;background:#f7f9fc;border:1px solid #dde5f0;border-radius:8px;font-size:14px;line-height:1.8;color:#333;white-space:pre-wrap;max-height:40vh;overflow:auto"></div>
   </div>`;
   document.getElementById('view').prepend(box);
+  // —— 扩展功能：棋风统计、自适应难度、每日一题评级、嘴炮 ——
+  try {
+    const k = curGameKey();
+    const sel = document.getElementById('diff');
+    const diffTxt = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+    const stats = gameStatsFor(k).concat([['难度', diffTxt], ['模式', localStorage.getItem('fnos_mode') === '2p' ? '双人同屏' : '人机']]);
+    const info = { game: k, won: won === true, title: title, detail: detail, stats: stats, ts: Date.now() };
+    const dr = window.EXTRAS ? EXTRAS.onGameEnd(info) : null;
+    const box2 = document.getElementById('daily-result');
+    if (box2 && dr && dr.rating) {
+      box2.innerHTML = dr.rating === '未过关'
+        ? '<div style="color:#a35a13">📅 每日一题：这局没过关，再试一次吧</div>'
+        : '<div style="padding:8px 10px;background:#f0fbf3;border:1px solid #bfe7cc;border-radius:8px;color:#1e7a45">📅 每日一题过关！评级 <b>' + dr.rating + '</b> · 用时 ' + dr.sec + ' 秒 · 🔥 连续打卡 <b>' + dr.streak + '</b> 天</div>';
+    }
+  } catch (e) { }
 }
 
 // —— 残局库 ——

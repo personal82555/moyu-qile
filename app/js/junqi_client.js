@@ -175,6 +175,7 @@ function render_junqi() {
 }
 function jqClick(r, c) {
   if (!jq || jqAiBusy) return;
+  if (window.EXTRAS) EXTRAS.markPre('junqi');
   const p = jq.cells[r][c];
   if (p && !jq.shown[r][c]) { jq.flip(r, c); }
   else if (jqSel) {
@@ -192,6 +193,7 @@ function jqClick(r, c) {
 function junqiAfter() {
   const w = jq.winner();
   if (w) return junqiOver(w);
+  if (window.EXTRAS) setTimeout(() => EXTRAS.stepReview('junqi'), 40);
   swapTimer();
   if (window.autoSnapshot) autoSnapshot();
   if (jq2P()) {
@@ -219,6 +221,7 @@ function jqAiTurn() {
   }
   const doFlip = () => jq.flip(...flips[Math.floor(Math.random() * flips.length)]);
   const doMove = () => { const p = moves[Math.floor(Math.random() * moves.length)]; jq.movePiece(p[0], p[1]); };
+  const _hadFlag = jq.flagTaken;
   if (lvl === 'easy') {
     if (flips.length && (Math.random() < 0.6 || !moves.length)) doFlip(); else if (moves.length) doMove(); else if (flips.length) doFlip(); else jq.turn = 1 - jq.turn;
   } else {
