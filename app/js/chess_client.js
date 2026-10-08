@@ -114,7 +114,7 @@ function chessClick(r, c) {
       const chk = cg.inCheck(cg.redTurn ? 'r' : 'b');
       setStatus('chess-st', (cg.redTurn ? '红' : '黑') + '方行棋' + (chk ? ' · 将军!' : '') + (killed ? '（吃子）' : ''));
       render_chess();
-      if (window.EXTRAS) { setTimeout(() => EXTRAS.stepReview('chess'), 40); if (killed) EXTRAS.taunt('playerEat'); }
+      if (window.EXTRAS) { setTimeout(() => EXTRAS.stepReview('chess'), 0); if (killed) EXTRAS.taunt('playerEat'); }
       swapTimer();   // 红走完切黑
       if (window.autoSnapshot) autoSnapshot();
       maybeAI();

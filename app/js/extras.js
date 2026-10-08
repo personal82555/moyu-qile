@@ -65,7 +65,7 @@
   /* ============================================================================
      1) 实时"这步亏了"提示
      ========================================================================== */
-  let preEval = null, preBest = null, preGom = null, lastJqMove = null;
+  let preEval = null, preBest = null, preGom = null, lastJqMove = null, preMoves = -1;
 
   /** 把引擎走法翻成"人话"：左起第2列的炮往前3格 / 吃掉对方的马 */
   function moveCN(g, m) {
@@ -90,6 +90,7 @@
     preEval = preBest = preGom = lastJqMove = null;
     try {
       if (key === 'chess' && typeof cg !== 'undefined' && cg && typeof aiMove === 'function') {
+        preMoves = cg.moves.length;
         const r = aiMove(cg, { side: 'r', depth: 2 });
         if (r) { preEval = r.score; preBest = r.move; }
       } else if (key === 'gomoku' && typeof gk !== 'undefined' && gk) {
@@ -129,6 +130,7 @@
     return { score: best, at };
   }
 
+  EX._dbg = function () { return { preEval: preEval, preBest: preBest }; };
   /** 玩家落子后调用：给出"这步亏了吗"的本地点评 */
   EX.stepReview = function (key) {
     try {
@@ -136,10 +138,13 @@
       let msg = null, kind = 'warn';
       if (key === 'chess' && typeof cg !== 'undefined' && cg && typeof aiMove === 'function') {
         if (preEval == null) return;
-        const me = cg.redTurn ? 'b' : 'r';               // 玩家刚走完，轮到对手
+        // 必须是"玩家走完、AI 还没回"的那一刻：否则盘面已变，算出来的是错的
+        if (cg.moves.length !== preMoves + 1) { EX._last = { skip: 'AI已回手/局面不符', moves: cg.moves.length, preMoves: preMoves }; return; }
+        const me = cg.redTurn ? 'r' : 'b';               // 现在轮到谁走，就让谁走出"最优回应"
         const r = aiMove(cg, { side: me, depth: 2 });
         const post = r ? -r.score : preEval;
         const loss = preEval - post;
+        EX._last = { preEval: preEval, post: post, loss: loss, side: me, redTurn: cg.redTurn, moves: cg.moves.length };
         if (loss >= 120) {
           const unit = loss >= 700 ? '≈ 一个车' : loss >= 300 ? '≈ 一个马或炮' : '≈ 一个兵';
           msg = '⚠️ 这步亏了约 ' + Math.round(loss) + ' 分（' + unit + '）';

@@ -193,7 +193,7 @@ function jqClick(r, c) {
 function junqiAfter() {
   const w = jq.winner();
   if (w) return junqiOver(w);
-  if (window.EXTRAS) setTimeout(() => EXTRAS.stepReview('junqi'), 40);
+  if (window.EXTRAS) setTimeout(() => EXTRAS.stepReview('junqi'), 0);
   swapTimer();
   if (window.autoSnapshot) autoSnapshot();
   if (jq2P()) {

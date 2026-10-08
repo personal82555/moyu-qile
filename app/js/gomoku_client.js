@@ -52,7 +52,7 @@ function gokClick(r, c) {
   if (!gk.place(r, c)) return;
   render_gomoku();
   if (gokEnd()) return;
-  if (window.EXTRAS) setTimeout(() => EXTRAS.stepReview('gomoku'), 40);
+  if (window.EXTRAS) setTimeout(() => EXTRAS.stepReview('gomoku'), 0);
   swapTimer();
   if (gok2P()) { setStatus('gok-st', '轮到 ' + (gk.player === 1 ? '黑棋' : '白棋')); if (window.autoSnapshot) autoSnapshot(); if (window.autoCoachIfOn) autoCoachIfOn(); return; }
   aiBusy = true;
