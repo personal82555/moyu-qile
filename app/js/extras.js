@@ -528,31 +528,106 @@
   /* ============================================================================
      5) 战绩分享海报（Canvas 本机生成）
      ========================================================================== */
+  /* ================= 战绩海报（文字可自定义 · 实时预览 · 可存为默认） ================= */
+  function posterDefaults(info, saved) {
+    saved = saved || LS.get('posterText', {});
+    info = info || {};
+    return {
+      title: info.title || (info.won ? '🏆 胜利' : '💔 惜败'),
+      detail: info.detail || '',
+      quote: info.quote || saved.quote || pickQuip(info.won ? 'win' : 'lose'),
+      foot: saved.foot || '免费在线玩 · 象棋 / 五子棋 / 军棋',
+      links: saved.links || '🌐 www.88531.cn    📖 doc.88531.cn',
+      src: saved.src || '⭐ 开源地址 github.com/personal82555/moyu-qile',
+      sign: saved.sign || (todayStr() + ' · 摸鱼棋乐（手机/电脑都能玩）')
+    };
+  }
+  function fitText(x, text, maxW, maxSize, minSize, weight) {
+    let size = maxSize || 40;
+    const set = () => { x.font = (weight || 'bold ') + size + 'px sans-serif'; };
+    set();
+    while (size > (minSize || 14) && x.measureText(text).width > maxW) { size -= 2; set(); }
+    return size;
+  }
+
   EX.poster = function (info) {
     info = info || window.__lastGameInfo || {};
     EX._cv = document.createElement('canvas'); EX._cv.width = 800; EX._cv.height = 1150;
+    EX._posterInfo = info;
+    EX._p = posterDefaults(info);
+    const F = [
+      ['title', '结果标题', '🏆 红方胜！'],
+      ['detail', '副标题', '你斩杀黑将 · 用时 3分12秒'],
+      ['quote', '金句', '这步棋，我记下了'],
+      ['foot', '底部宣传语', '免费在线玩 · 象棋 / 五子棋 / 军棋'],
+      ['links', '网址行', '🌐 www.88531.cn    📖 doc.88531.cn'],
+      ['src', '开源地址行', '⭐ 开源地址 github.com/personal82555/moyu-qile'],
+      ['sign', '落款行', todayStr() + ' · 摸鱼棋乐']
+    ];
+    const fields = F.map(([k, label, ph]) =>
+      '<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">'
+      + '<label style="width:76px;font-size:12px;color:#666;flex:none">' + label + '</label>'
+      + '<input id="pf-' + k + '" style="flex:1;font-size:13px;padding:6px 8px;border:1px solid #dbe3ef;border-radius:7px" '
+      + 'value="' + esc(EX._p[k]).replace(/"/g, '&quot;') + '" placeholder="' + esc(ph) + '" '
+      + 'oninput="EXTRAS.pEdit(\'' + k + '\', this.value)"></div>').join('');
+
     const old = el('ex-modal'); if (old) old.remove();
-    const d = document.createElement('div'); d.id = 'ex-modal'; d.className = 'ai-box';
-    d.innerHTML = '<div class="ai-inner" style="text-align:center;max-width:560px">'
-      + '<h3 style="margin:0 0 10px">🖼 战绩海报</h3>'
-      + '<img id="ex-poster-img" style="width:100%;max-width:420px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.25)">'
-      + '<div id="ex-poster-quote" style="font-size:13px;color:#666;margin-top:10px"></div>'
+    const d = document.createElement('div');
+    d.id = 'ex-modal'; d.className = 'ai-box';
+    d.innerHTML = '<div class="ai-inner" style="text-align:center;max-width:600px">'
+      + '<h3 style="margin:0 0 10px">🖼 战绩海报（文字可改）</h3>'
+      + '<img id="ex-poster-img" style="width:100%;max-width:400px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.25)">'
+      + '<div style="text-align:left;margin-top:12px;padding:11px 12px;background:#f7f9fc;border:1px solid #dde5f0;border-radius:10px">'
+      + '<div style="font-weight:bold;margin-bottom:8px">✏️ 自定义海报文字 <span style="font-weight:normal;color:#888;font-size:12px">（边打字边预览；数据列"手数/用时/难度"取自本局真实战绩，不可改）</span></div>'
+      + fields
+      + '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px">'
+      + '<button class="btn" onclick="EXTRAS.quoteAgain()">💬 换一句金句</button>'
+      + '<button class="btn" onclick="EXTRAS.pSave()">💾 存为我的默认</button>'
+      + '<button class="btn" onclick="EXTRAS.pReset()">↩ 恢复默认</button>'
+      + '</div>'
+      + '<div id="pf-hint" style="font-size:12px;color:#666;margin-top:7px"></div>'
+      + '</div>'
       + '<div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
       + '<button class="btn primary" onclick="EXTRAS.downloadPoster()">⬇ 保存图片</button>'
       + '<button class="btn" onclick="EXTRAS.copyResult()">📋 复制文字战绩</button>'
-      + '<button class="btn" onclick="EXTRAS.quoteAgain()">💬 换一句金句</button>'
       + '<button class="btn" onclick="document.getElementById(\'ex-modal\').remove()">关闭</button></div>'
-      + '<div style="font-size:12px;color:#999;margin-top:8px">海报已带上你的站点推广信息，发朋友圈/群聊即可引流。</div></div>';
+      + '<div style="font-size:12px;color:#999;margin-top:8px">海报带站点推广信息，发朋友圈/群聊即可引流。</div></div>';
     (el('view') || document.body).prepend(d);
-    EX._posterInfo = info;
-    if (!info.quote) info.quote = pickQuip(info.won ? 'win' : 'lose');
-    const url = EX.renderPosterCanvas(info);
-    el('ex-poster-img').src = url;
-    el('ex-poster-quote').textContent = '金句：' + (info.quote || '');
+    el('ex-poster-img').src = EX.renderPosterCanvas(info, EX._p);
   };
-  EX.renderPosterCanvas = function (info) {
-    EX._canvasFor = info;
-    // 重绘：复用 EX.poster 的画布逻辑（简化：直接再生成一次）
+
+  EX.pEdit = function (k, v) {
+    if (!EX._p) return;
+    EX._p[k] = v;
+    const img = el('ex-poster-img');
+    if (img) img.src = EX.renderPosterCanvas(EX._posterInfo, EX._p);
+    const hint = el('pf-hint');
+    if (hint) hint.textContent = '已修改（未保存到默认值）';
+  };
+  EX.pSave = function () {
+    if (!EX._p) return;
+    // 只持久化"中性文字"（金句/底部四行）；标题与副标题跟随本局胜负，避免下次显示错的胜负
+    LS.set('posterText', { quote: EX._p.quote, foot: EX._p.foot, links: EX._p.links, src: EX._p.src, sign: EX._p.sign });
+    const hint = el('pf-hint');
+    if (hint) hint.textContent = '✅ 已存为你的默认文字（下次打开海报自动沿用）';
+    toast('已保存为默认文字');
+  };
+  EX.pReset = function () {
+    if (!EX._p) return;
+    const saved = {};
+    LS.set('posterText', saved);
+    EX._p = posterDefaults(EX._posterInfo, saved);
+    for (const k of ['title', 'detail', 'quote', 'foot', 'links', 'src', 'sign']) {
+      const input = el('pf-' + k);
+      if (input) input.value = EX._p[k];
+    }
+    const img = el('ex-poster-img'); if (img) img.src = EX.renderPosterCanvas(EX._posterInfo, EX._p);
+    const hint = el('pf-hint'); if (hint) hint.textContent = '已恢复默认文字（并清空已存的默认值）';
+  };
+
+  EX.renderPosterCanvas = function (info, P) {
+    P = P || posterDefaults(info);
+    info = info || {};
     const W = 800, H = 1150;
     const cv = EX._cv; const x = cv.getContext('2d');
     x.clearRect(0, 0, W, H);
@@ -563,42 +638,47 @@
     for (let i = 0; i < 9; i++) { x.beginPath(); x.arc(70 + i * 90, 120 + (i % 3) * 180, 58, 0, Math.PI * 2); x.fill(); }
     const names = { chess: '象棋', gomoku: '五子棋', junqi: '军棋' };
     x.textAlign = 'center';
-    x.fillStyle = '#ffd964'; x.font = 'bold 40px sans-serif';
+    // 品牌行
+    x.fillStyle = '#ffd964';
+    fitText(x, '摸鱼棋乐 · ' + (names[info.game] || '对局'), W - 160, 40, 20, 'bold ');
     x.fillText('摸鱼棋乐 · ' + (names[info.game] || '对局'), W / 2, 110);
-    x.fillStyle = '#fff'; x.font = 'bold 92px sans-serif';
-    x.fillText(info.title || (info.won ? '🏆 胜利' : '💔 惜败'), W / 2, 300);
-    x.font = '30px sans-serif'; x.fillStyle = '#cfe0f5';
-    if (info.detail) x.fillText(info.detail, W / 2, 360);
+    // 结果标题（用户可改，超长自动缩字）
+    x.fillStyle = '#fff';
+    fitText(x, P.title, W - 120, 92, 30, 'bold ');
+    x.fillText(P.title, W / 2, 300);
+    // 副标题
+    if (P.detail) { x.fillStyle = '#cfe0f5'; fitText(x, P.detail, W - 110, 30, 16, ''); x.fillText(P.detail, W / 2, 360); }
+    // 数据卡片（真实战绩，不参与自定义）
     const stats = info.stats || [];
     let y = 450;
-    x.fillStyle = 'rgba(255,255,255,.10)';
-    x.fillRect(70, y - 60, W - 140, 92 * Math.ceil(stats.length / 2));
-    stats.forEach((s, i) => {
-      const cx = i % 2 === 0 ? W / 2 - 180 : W / 2 + 180;
-      const cy = y + Math.floor(i / 2) * 92;
-      x.textAlign = 'center';
-      x.fillStyle = '#ffd964'; x.font = 'bold 34px sans-serif'; x.fillText(String(s[1]), cx, cy);
-      x.fillStyle = '#cfe0f5'; x.font = '22px sans-serif'; x.fillText(String(s[0]), cx, cy + 30);
-    });
-    y = y + Math.ceil(stats.length / 2) * 92 + 50;
-    if (info.quote) {
+    if (stats.length) {
+      x.fillStyle = 'rgba(255,255,255,.10)';
+      x.fillRect(70, y - 60, W - 140, 92 * Math.ceil(stats.length / 2));
+      stats.forEach((s2, i) => {
+        const cx = i % 2 === 0 ? W / 2 - 180 : W / 2 + 180;
+        const cy = y + Math.floor(i / 2) * 92;
+        x.textAlign = 'center';
+        x.fillStyle = '#ffd964'; fitText(x, String(s2[1]), 300, 34, 16, 'bold '); x.fillText(String(s2[1]), cx, cy);
+        x.fillStyle = '#cfe0f5'; fitText(x, String(s2[0]), 300, 22, 13, ''); x.fillText(String(s2[0]), cx, cy + 30);
+      });
+      y = y + Math.ceil(stats.length / 2) * 92 + 50;
+    } else { y = 470; }
+    // 金句（自动换行）
+    if (P.quote) {
       x.font = 'italic 27px sans-serif'; x.fillStyle = '#ffe9a8'; x.textAlign = 'center';
-      const chars = ('“' + info.quote + '”').split(''); let line = '', yy = y;
+      const chars = ('“' + P.quote + '”').split(''); let line = '', yy = y;
       for (const ch of chars) {
         if (x.measureText(line + ch).width > W - 180) { x.fillText(line, W / 2, yy); line = ch; yy += 38; }
         else line += ch;
       }
       x.fillText(line, W / 2, yy);
     }
+    // 底部（全部可自定义，超长自动缩字）
     x.textAlign = 'center';
-    x.font = '26px sans-serif'; x.fillStyle = '#dbe7f7';
-    x.fillText('免费在线玩 · 象棋 / 五子棋 / 军棋', W / 2, H - 190);
-    x.fillStyle = '#ffd964'; x.font = 'bold 28px sans-serif';
-    x.fillText('🌐 www.88531.cn    📖 doc.88531.cn', W / 2, H - 140);
-    x.font = '24px sans-serif'; x.fillStyle = '#cfe0f5';
-    x.fillText('⭐ 开源地址 github.com/personal82555/moyu-qile', W / 2, H - 96);
-    x.font = '22px sans-serif'; x.fillStyle = 'rgba(255,255,255,.55)';
-    x.fillText(todayStr() + ' · 摸鱼棋乐（手机/电脑都能玩）', W / 2, H - 52);
+    if (P.foot) { x.fillStyle = '#dbe7f7'; fitText(x, P.foot, W - 90, 26, 14, ''); x.fillText(P.foot, W / 2, H - 200); }
+    if (P.links) { x.fillStyle = '#ffd964'; fitText(x, P.links, W - 90, 28, 14, 'bold '); x.fillText(P.links, W / 2, H - 150); }
+    if (P.src) { x.fillStyle = '#cfe0f5'; fitText(x, P.src, W - 90, 24, 13, ''); x.fillText(P.src, W / 2, H - 104); }
+    if (P.sign) { x.fillStyle = 'rgba(255,255,255,.55)'; fitText(x, P.sign, W - 90, 22, 12, ''); x.fillText(P.sign, W / 2, H - 56); }
     return cv.toDataURL('image/png');
   };
   EX.downloadPoster = function () {
@@ -612,18 +692,27 @@
   };
   EX.copyResult = function () {
     const i = EX._posterInfo || {};
-    const t = '我在《摸鱼棋乐》' + ({ chess: '象棋', gomoku: '五子棋', junqi: '军棋' }[i.game] || '') + '拿到 ' + (i.title || '') + '！'
+    const P = EX._p || posterDefaults(i);
+    const t = (P.quote || '') + '  我在《摸鱼棋乐》' + ({ chess: '象棋', gomoku: '五子棋', junqi: '军棋' }[i.game] || '') + '拿到 ' + (i.title || '') + '！'
       + (i.stats || []).map(s => s[0] + '：' + s[1]).join('，') + '。来 www.88531.cn 挑战我～';
     try { navigator.clipboard.writeText(t); toast('文字战绩已复制'); } catch (e) { toast(t); }
   };
   EX.quoteAgain = function () {
     const info = EX._posterInfo || {};
-    if (!hasModel()) { const q = pickQuip(info.won ? 'win' : 'lose'); info.quote = q; el('ex-poster-quote').textContent = '金句：' + q; el('ex-poster-img').src = EX.renderPosterCanvas(info); return; }
+    const names = { chess: '象棋', gomoku: '五子棋', junqi: '军棋' };
+    const setQ = (q) => {
+      if (EX._p) { EX._p.quote = q; }
+      const inp = el('pf-quote'); if (inp) inp.value = q;
+      const img = el('ex-poster-img'); if (img) img.src = EX.renderPosterCanvas(info, EX._p || posterDefaults(info));
+      const hint = el('pf-hint'); if (hint) hint.textContent = '金句已更新（点「存为我的默认」可记住）';
+    };
+    if (!hasModel()) { setQ(pickQuip(info.won ? 'win' : 'lose')); return; }
+    const hint = el('pf-hint'); if (hint) hint.textContent = '🤖 正在想一句…';
     const cfg = aicfg();
-    el('ex-poster-quote').textContent = '🤖 正在想一句…';
     askAI(cfg, { baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, model: cfg.model, persona: cfg.persona || 'savage', task: 'taunt',
-      prompt: '我刚在' + ({ chess: '象棋', gomoku: '五子棋', junqi: '军棋' }[info.game] || '棋类') + '里' + (info.won ? '赢了' : '输了') + '，请给我一句 20 字以内、适合发朋友圈的中文金句（有趣、不低俗）。' })
-      .then(r => { info.quote = r.hint || pickQuip(info.won ? 'win' : 'lose'); el('ex-poster-quote').textContent = '金句：' + info.quote; el('ex-poster-img').src = EX.renderPosterCanvas(info); });
+      prompt: '我刚在' + (names[info.game] || '棋类') + '里' + (info.won ? '赢了' : '输了') + '，请给我一句 20 字以内、适合发朋友圈的中文金句（有趣、不低俗）。' })
+      .then(r => setQ(r.hint || pickQuip(info.won ? 'win' : 'lose')))
+      .catch(() => setQ(pickQuip(info.won ? 'win' : 'lose')));
   };
   EX.quoteFor = function (won) { return pickQuip(won ? 'win' : 'lose'); };
 
