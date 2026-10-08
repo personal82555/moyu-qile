@@ -128,38 +128,67 @@ const CTJ = { 'Content-Type': 'application/json; charset=utf-8' };
 
 async function aiHintAPI(req, res, body) {
   try {
-    const { baseUrl, apiKey, model, prompt, history } = JSON.parse(body);
+    const { baseUrl, apiKey, model, prompt } = JSON.parse(body);
     if (!baseUrl || !model || !prompt) { res.writeHead(400, CTJ); return res.end(JSON.stringify({ error: '缺少 baseUrl/model/prompt' })); }
     const url = baseUrl.replace(/\/$/, '') + '/chat/completions';
     const payload = {
       model,
+      stream: false,
       messages: [
-        { role: 'system', content: '你是一位中文棋类教练。用户给出棋局描述，请用一句话（50字以内）告诉用户（执红/黑方）下一步应该怎么走，指出具体位置和理由。直接输出建议，不要客套。' },
+        { role: 'system', content: '你是一位中文棋类教练。用户给出棋局描述，请用一句话（50字以内）直接告诉用户下一步怎么走，指出具体位置和理由。只输出建议本身，不要输出思考过程、不要客套。' },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 120,
+      max_tokens: 512,
       temperature: 0.6
     };
     const u = new URL(url);
     const mod = u.protocol === 'https:' ? require('https') : require('http');
     const opts = { method: 'POST', hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname + u.search,
-      headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: 'Bearer ' + apiKey } : {}) }, timeout: 30000 };
-    await new Promise((resolve, reject) => {
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(apiKey ? { Authorization: 'Bearer ' + apiKey } : {}) }, timeout: 45000 };
+    // 从各家返回里尽力取出正文：content / reasoning_content / text / 数组形式
+    const pickText = (j) => {
+      const ch = (j && j.choices && j.choices[0]) || {};
+      const m = ch.message || {};
+      const cand = [
+        typeof m.content === 'string' ? m.content : '',
+        Array.isArray(m.content) ? m.content.map(x => (x && (x.text || x.content)) || '').join('') : '',
+        typeof m.reasoning_content === 'string' ? m.reasoning_content : '',
+        typeof m.reasoning === 'string' ? m.reasoning : '',
+        typeof ch.text === 'string' ? ch.text : '',
+        typeof j.output_text === 'string' ? j.output_text : ''
+      ].map(x => (x || '').trim()).filter(Boolean);
+      return { text: cand[0] || '', finish: ch.finish_reason || '', raw: cand };
+    };
+    await new Promise((resolve) => {
       const rq = mod.request(opts, rs => {
         let buf = '';
         rs.on('data', d2 => buf += d2);
         rs.on('end', () => {
-          try {
-            const j = JSON.parse(buf);
-            const text = j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : (j.error ? null : buf.slice(0, 200));
-            if (text) { res.writeHead(200, CTJ); res.end(JSON.stringify({ hint: text.trim() })); }
-            else { res.writeHead(502, CTJ); res.end(JSON.stringify({ error: (j.error && (j.error.message || j.error)) || '模型无返回' })); }
-          } catch (e) { res.writeHead(502, CTJ); res.end(JSON.stringify({ error: '模型返回非JSON: ' + buf.slice(0, 120) })); }
+          let j = null;
+          try { j = JSON.parse(buf); } catch (e) {
+            // 返回体不是 JSON（可能是 SSE / HTML 错误页）
+            res.writeHead(502, CTJ);
+            return res.end(JSON.stringify({ error: '模型返回非JSON（HTTP ' + rs.statusCode + '）：' + String(buf).replace(/\s+/g, ' ').slice(0, 200) })), resolve();
+          }
+          if (j && j.error) {
+            res.writeHead(502, CTJ);
+            return res.end(JSON.stringify({ error: '模型接口报错：' + (j.error.message || JSON.stringify(j.error)).slice(0, 200) })), resolve();
+          }
+          const got = pickText(j);
+          if (got.text) {
+            res.writeHead(200, CTJ);
+            return res.end(JSON.stringify({ hint: got.text.slice(0, 200) })), resolve();
+          }
+          // 没有任何正文：把原始返回摘要回传，便于定位（如 token 用尽 / 空回复 / 被内容策略拦截）
+          const brief = JSON.stringify(j).slice(0, 260);
+          const why = got.finish === 'length' ? '（输出达到长度上限，正文为空）' : '';
+          res.writeHead(502, CTJ);
+          res.end(JSON.stringify({ error: '模型没有返回正文' + why + '。原始返回：' + brief }));
           resolve();
         });
       });
-      rq.on('error', e => { res.writeHead(502, CTJ); res.end(JSON.stringify({ error: '连接模型失败: ' + e.message })); resolve(); });
-      rq.on('timeout', () => { rq.destroy(); res.writeHead(504, CTJ); res.end(JSON.stringify({ error: '模型响应超时' })); resolve(); });
+      rq.on('error', e => { res.writeHead(502, CTJ); res.end(JSON.stringify({ error: '连接模型失败: ' + e.message + '（请检查 Base URL 是否能从服务器访问）' })); resolve(); });
+      rq.on('timeout', () => { rq.destroy(); res.writeHead(504, CTJ); res.end(JSON.stringify({ error: '模型响应超时（45 秒）' })); resolve(); });
       rq.write(JSON.stringify(payload));
       rq.end();
     });

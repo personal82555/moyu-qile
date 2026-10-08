@@ -103,10 +103,39 @@ function aiSettings() {
     </div>
     <input id="ai-model" placeholder="模型名 例：deepseek-v4.1-flash" value="${cfg.model || 'deepseek-v4.1-flash'}">
     <div><button class="btn primary" onclick="aiSave()">保存并启用</button>
+    <button class="btn" onclick="aiTestConnection()">🔌 测试连接</button>
     <button class="btn" onclick="document.getElementById('ai-set').remove()">关闭</button></div>
+    <div id="ai-test-result" style="font-size:13px;color:#666;line-height:1.6"></div>
   </div>`;
   app.prepend(box);
 }
+function aiTestConnection() {
+  const out = document.getElementById('ai-test-result');
+  const cfg = {
+    baseUrl: (document.getElementById('ai-url') || {}).value || '',
+    apiKey: (document.getElementById('ai-key') || {}).value || '',
+    model: (document.getElementById('ai-model') || {}).value || ''
+  };
+  if (out) out.innerHTML = '<span style="color:#888">正在测试…</span>';
+  const t0 = Date.now();
+  fetch('/api/ai-hint', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({}, cfg, { prompt: '请只回复四个字：连接成功' })) })
+    .then(r => r.json()).then(res => {
+      const ms = Date.now() - t0;
+      if (res && res.hint) {
+        if (out) out.innerHTML = '<span style="color:#2a7">✅ 连接成功（' + ms + 'ms）：</span>' + res.hint;
+      } else {
+        const msg = (res && res.error) || '未知错误';
+        let tip = '';
+        if (/Invalid token|401|403|Unauthorized/i.test(msg)) tip = '<br>👉 看起来是 KEY 无效或过期，去「免费 获取KEY」重新拿一个。';
+        else if (/ENOTFOUND|ECONNREFUSED|连接模型失败/i.test(msg)) tip = '<br>👉 Base URL 填错，或该地址无法从服务器访问（注意要带 /v1）。';
+        else if (/model|模型不存在|not found|404/i.test(msg)) tip = '<br>👉 模型名不对，去网关的模型列表里复制准确的模型名。';
+        else if (/没有返回正文|超时/i.test(msg)) tip = '<br>👉 模型没吐正文（思考型模型常见），可换一个模型或加大上限后重试。';
+        if (out) out.innerHTML = '<span style="color:#c33">❌ 失败：</span>' + msg + tip;
+      }
+    }).catch(e => { if (out) out.innerHTML = '<span style="color:#c33">❌ 请求失败：</span>' + e.message; });
+}
+window.aiTestConnection = aiTestConnection;
 function toggleKeyVisible() {
   const inp = document.getElementById('ai-key');
   const btn = document.getElementById('ai-key-btn');
