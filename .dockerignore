@@ -1,0 +1,7 @@
+node_modules
+data
+ref
+tests
+*.log
+.git
+README.md

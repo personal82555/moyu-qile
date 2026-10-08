@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>🐟 摸鱼棋乐 · 益智小游戏</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header>
+  <h1>🐟 摸鱼棋乐 <small style="opacity:.7;font-size:13px">· 益智 · 摸鱼 · 小憩</small></h1>
+  <nav id="menu">
+    <a href="#/chess" data-game="chess">象棋</a>
+    <a href="#/gomoku" data-game="gomoku">五子棋</a>
+    <a href="#/junqi" data-game="junqi">军棋</a>
+  <a href="/about.html" target="_blank" id="nav-about" style="background:#1e6ef0">📖 使用说明</a>
+  </nav>
+</header>
+
+<main id="view"></main>
+
+<script src="/js/gomoku.js?v=44"></script>
+<script src="/js/chess.js?v=44"></script>
+<script src="/js/chessAI.js?v=44"></script>
+<script src="/js/junqi.js?v=44"></script>
+<script src="/js/gomoku_client.js?v=44"></script>
+<script src="/js/chess_client.js?v=44"></script>
+<script src="/js/junqi_client.js?v=44"></script>
+<script src="/js/common.js?v=44"></script>
+<script>
+const views = {
+  chess: () => gameLobby('chess','象棋','🐟 楚河汉界，红先黑后，工作间隙杀一盘'),
+  gomoku: () => gameLobby('gomoku','五子棋','🐟 黑先白后，五连即胜，摸鱼冥想第一选择'),
+  junqi: () => gameLobby('junqi','军棋','🐟 翻开棋子即归属，隐蔽摸鱼首选'),
+};
+function gameLobby(key, title, desc) {
+  return `<section class="lobby">
+    <div class="lobby-hero"><h2>${title}</h2><p>${desc}</p></div>
+    <div class="lobby-actions">
+      <button class="btn start-big" onclick="startSolo('${key}')">🎮 单人 vs AI</button>
+    <button class="btn start-two" onclick="startTwo('${key}')">👥 双人同屏</button>
+    </div>
+  </section>`;
+}
+function bootSolo(kk) {
+  ensureGameShell(kk);
+  setTimeout(() => { try { window['boot_' + kk + '_solo'](); } catch (e) { console.error(e); } }, 0);
+}
+function startSolo(key) { try { localStorage.setItem('fnos_mode', 'ai'); } catch (e) {} location.hash = '#/' + key + '-solo'; bootSolo(key); }
+function startTwo(key) { try { localStorage.setItem('fnos_mode', '2p'); } catch (e) {} location.hash = '#/' + key + '-solo'; bootSolo(key); }
+function updateNavActive() {
+  try {
+    const cur = (location.hash || '').replace('#/', '').replace('-solo', '').replace('-multi', '') || '';
+    document.querySelectorAll('nav#menu a[data-game]').forEach(a => {
+      const on = a.getAttribute('data-game') === cur;
+      a.classList.toggle('nav-active', on);
+      a.style.background = on ? '#ffb703' : '';
+      a.style.color = on ? '#1b2430' : '';
+      a.style.fontWeight = on ? 'bold' : '';
+    });
+  } catch (e) {}
+}
+function route() {
+  try {
+    let k = (location.hash.replace('#/','') || 'chess').replace('-', '_');
+    updateNavActive();
+    if (k.endsWith('_solo')) {
+      const g = k.replace('_solo','');
+      bootSolo(g);
+      // 若从存档列表跳到本游戏，优先恢复该存档；否则询问是否继续上一局（刷新/误关不丢局）
+      let pending = false;
+      if (window.checkPendingRestore) pending = checkPendingRestore(g);
+      if (!pending && window.checkAutoResume) checkAutoResume(g);
+      return;
+    }
+    if (!views[k]) k = 'chess';
+    app.innerHTML = views[k]();
+  } catch (e) { console.error(e); }
+}
+const app = document.getElementById('view');
+window.addEventListener('hashchange', () => { updateNavActive(); route(); });
+if (window.bindLeaveGuard) bindLeaveGuard();
+if (window.startAutoSave) startAutoSave();   // 对局中每 1 分钟自动覆盖存档
+route();
+</script>
+</body>
+</html>
