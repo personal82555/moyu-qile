@@ -102,6 +102,7 @@ function aiSettings() {
       <input id="ai-key" type="password" autocomplete="off" style="flex:1" placeholder="API Key（在 ai.88531.cn 获取，默认隐藏）" value="${cfg.apiKey || ''}">
       <button class="btn" type="button" onclick="toggleKeyVisible()" id="ai-key-btn" style="padding:9px 12px;white-space:nowrap">👁 显示</button>
     </div>
+    <div style="font-size:12px;color:#5f7d63;line-height:1.65;background:#f2f9f3;border:1px solid #d7ebdb;border-radius:8px;padding:8px 11px">🔒 放心填：KEY 只保存在<b>你自己的浏览器</b>里（localStorage），<b>不上传、不写入服务器</b>——服务器上没有任何存放 KEY 的文件，镜像里也没有。只有你发起 AI 请求时，浏览器才把 KEY 临时发给模型接口。</div>
     <div style="display:flex;gap:6px;align-items:center">
       <input id="ai-model" style="flex:1" placeholder="模型名 例：mimo-v2.6-flash" value="${cfg.model || 'mimo-v2.6-flash'}">
       <button class="btn primary" type="button" onclick="aiTestConnection()" style="padding:9px 14px;white-space:nowrap">🔌 测试</button>
