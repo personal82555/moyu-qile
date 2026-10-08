@@ -105,6 +105,19 @@ node tests/jq_shown.test.js    # 军棋翻开状态同步
 - AI 教练需要 OpenAI 兼容接口：`⚙ 模型设置` 里填 Base URL / Key / 模型名即可，不填不影响对局
 - 存档目录默认 `<数据卷>/saves`，可在「💾 存档 → ⚙ 存档路径」里改
 
+---
+
+## 🔗 友情链接
+
+| 站点 | 地址 | 说明 |
+|---|---|---|
+| 88531 主站 | <https://www.88531.cn> | 软件工具与资源分享主站 |
+| 在线文档 | <https://doc.88531.cn> | 安装配置与使用教程 |
+| 资源合集 | <https://link3.cc/88531cn> | 全部项目入口与工具合集 |
+| 免费 AI KEY | <https://ai.88531.cn> | OpenAI 兼容大模型网关（AI 教练后端） |
+| 资享博客 | <https://personal82555.github.io> | 软件与工具分享博客 |
+| 网盘资源导航 | <https://github.com/personal82555/mrfx-resource-hub> | 全网网盘资源集合 |
+
 ## 📄 License
 
 MIT © 2026 摸鱼棋乐
