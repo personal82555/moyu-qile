@@ -12,11 +12,14 @@ const TMAP = { '帅': '将', '帥': '将', '将': '将', '仕': '士', '士': '�
 const inB = (r, c) => r >= 0 && r < 10 && c >= 0 && c < 9;
 class Chess {
   constructor(fen) {
+    // "局面FEN + moves"：FEN 已是当前局面，moves 只作历史记录，**不能重放**（重放会双重应用）
     if (fen && fen.includes(' moves:')) { const [b, mv] = fen.split(' moves:'); this.B = this.fromFen(b); this.moves = mv ? mv.trim().split(' ').filter(Boolean).map(x => x.split(',').map(Number)) : []; }
     else if (fen && fen.includes('/')) { this.B = this.fromFen(fen); this.moves = []; }
     else { this.B = initBoard(); this.moves = []; }
     this.redTurn = true;                     // 红先；随后 apply() 每手翻转，不要再用 moves.length 预判
-    if (this.moves.length) { const ms = this.moves; this.moves = []; for (const m of ms) this.apply(m); }
+    // 注意：仅当传入的是「起始 FEN + 走法」时才需要重放；现在统一约定传入的 FEN 就是当前局面，
+    // 需要从起始局面重建请用 Chess.fromState()。
+    if (this.moves.length) this.redTurn = (this.moves.length % 2 === 0);
   }
   /** 保存/恢复：由「当前局面FEN + 走法表 + 行棋方」重建（区别于 full()，不会重复应用走法） */
   static fromState(fen, moves, redTurn) {
