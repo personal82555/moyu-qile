@@ -97,13 +97,25 @@ function aiSettings() {
       <a href="https://ai.88531.cn" target="_blank" class="btn primary" style="text-decoration:none;font-size:13px">🔑 免费 获取KEY</a>
     </div>
     <input id="ai-url" placeholder="Base URL 例：https://ai.88531.cn/v1" value="${cfg.baseUrl || 'https://ai.88531.cn/v1'}">
-    <input id="ai-key" placeholder="API Key（在 ai.88531.cn 获取）" value="${cfg.apiKey || ''}">
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="ai-key" type="password" autocomplete="off" style="flex:1" placeholder="API Key（在 ai.88531.cn 获取，默认隐藏）" value="${cfg.apiKey || ''}">
+      <button class="btn" type="button" onclick="toggleKeyVisible()" id="ai-key-btn" style="padding:9px 12px;white-space:nowrap">👁 显示</button>
+    </div>
     <input id="ai-model" placeholder="模型名 例：deepseek-v4.1-flash" value="${cfg.model || 'deepseek-v4.1-flash'}">
     <div><button class="btn primary" onclick="aiSave()">保存并启用</button>
     <button class="btn" onclick="document.getElementById('ai-set').remove()">关闭</button></div>
   </div>`;
   app.prepend(box);
 }
+function toggleKeyVisible() {
+  const inp = document.getElementById('ai-key');
+  const btn = document.getElementById('ai-key-btn');
+  if (!inp) return;
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  if (btn) btn.innerText = show ? '🙈 隐藏' : '👁 显示';
+}
+window.toggleKeyVisible = toggleKeyVisible;
 function aiSave() {
   saveAICfg({ baseUrl: document.getElementById('ai-url').value.trim(), apiKey: document.getElementById('ai-key').value.trim(), model: document.getElementById('ai-model').value.trim() });
   const b = document.getElementById('ai-set'); if (b) b.remove();
