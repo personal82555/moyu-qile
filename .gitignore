@@ -3,3 +3,6 @@ data/
 ref/
 *.log
 .DS_Store
+
+# FnDepot 是独立仓库（有自己的 .git），不纳入本仓库
+fpk/FnDepot/
