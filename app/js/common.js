@@ -101,7 +101,10 @@ function aiSettings() {
       <input id="ai-key" type="password" autocomplete="off" style="flex:1" placeholder="API Key（在 ai.88531.cn 获取，默认隐藏）" value="${cfg.apiKey || ''}">
       <button class="btn" type="button" onclick="toggleKeyVisible()" id="ai-key-btn" style="padding:9px 12px;white-space:nowrap">👁 显示</button>
     </div>
-    <input id="ai-model" placeholder="模型名 例：deepseek-v4.1-flash" value="${cfg.model || 'deepseek-v4.1-flash'}">
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="ai-model" style="flex:1" placeholder="模型名 例：deepseek-v4.1-flash" value="${cfg.model || 'deepseek-v4.1-flash'}">
+      <button class="btn primary" type="button" onclick="aiTestConnection()" style="padding:9px 14px;white-space:nowrap">🔌 测试</button>
+    </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px">
       <label style="color:#555">🎭 教练人格
         <select id="ai-persona" style="font-size:13px;padding:5px 8px">
@@ -115,9 +118,8 @@ function aiSettings() {
       <label style="color:#555"><input type="checkbox" id="ai-voice"> 🔊 语音朗读建议</label>
     </div>
     <div><button class="btn primary" onclick="aiSave()">保存并启用</button>
-    <button class="btn" onclick="aiTestConnection()">🔌 测试连接</button>
     <button class="btn" onclick="document.getElementById('ai-set').remove()">关闭</button></div>
-    <div id="ai-test-result" style="font-size:13px;color:#666;line-height:1.6"></div>
+    <div id="ai-test-result" style="display:none;font-size:13px;color:#666;line-height:1.7;padding:10px 12px;border-radius:8px;background:#f7f9fc;border:1px solid #dde5f0"></div>
   </div>`;
   app.prepend(box);
 }
@@ -128,14 +130,18 @@ function aiTestConnection() {
     apiKey: (document.getElementById('ai-key') || {}).value || '',
     model: (document.getElementById('ai-model') || {}).value || ''
   };
-  if (out) out.innerHTML = '<span style="color:#888">正在测试…</span>';
+  if (out) { out.style.display = 'block'; out.style.background = '#f7f9fc'; out.style.borderColor = '#dde5f0'; out.innerHTML = '<span style="color:#888">🔌 正在测试连接…（最多等 45 秒）</span>'; }
   const t0 = Date.now();
   fetch('/api/ai-hint', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(Object.assign({}, cfg, { prompt: '请只回复四个字：连接成功' })) })
     .then(r => r.json()).then(res => {
       const ms = Date.now() - t0;
       if (res && res.hint) {
-        if (out) out.innerHTML = '<span style="color:#2a7">✅ 连接成功（' + ms + 'ms）：</span>' + res.hint;
+        if (out) {
+          out.style.background = '#f0fbf3'; out.style.borderColor = '#bfe7cc';
+          out.innerHTML = '<b style="color:#1e8f4a">✅ 测试成功（' + ms + 'ms）</b><br>模型回复：' + res.hint
+            + '<br><span style="color:#666">说明 KEY、Base URL、模型名都可用，可以点「保存并启用」了。</span>';
+        }
       } else {
         const msg = (res && res.error) || '未知错误';
         let tip = '';
@@ -143,9 +149,13 @@ function aiTestConnection() {
         else if (/ENOTFOUND|ECONNREFUSED|连接模型失败/i.test(msg)) tip = '<br>👉 Base URL 填错，或该地址无法从服务器访问（注意要带 /v1）。';
         else if (/model|模型不存在|not found|404/i.test(msg)) tip = '<br>👉 模型名不对，去网关的模型列表里复制准确的模型名。';
         else if (/没有返回正文|超时/i.test(msg)) tip = '<br>👉 模型没吐正文（思考型模型常见），可换一个模型或加大上限后重试。';
-        if (out) out.innerHTML = '<span style="color:#c33">❌ 失败：</span>' + msg + tip;
+        if (out) {
+          out.style.background = '#fff5f5'; out.style.borderColor = '#f3c9c9';
+          out.innerHTML = '<b style="color:#c33">❌ 测试失败</b><br>' + msg + tip
+            + '<br><span style="color:#888">（KEY 只在你自己浏览器里保存，不会上传到服务器）</span>';
+        }
       }
-    }).catch(e => { if (out) out.innerHTML = '<span style="color:#c33">❌ 请求失败：</span>' + e.message; });
+    }).catch(e => { if (out) { out.style.display = 'block'; out.style.background = '#fff5f5'; out.style.borderColor = '#f3c9c9'; out.innerHTML = '<b style="color:#c33">❌ 请求失败：</b>' + e.message; } });
 }
 window.aiTestConnection = aiTestConnection;
 function toggleKeyVisible() {
