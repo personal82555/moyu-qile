@@ -110,14 +110,14 @@ function aiSettings() {
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px">
       <label style="color:#555">🎭 教练人格
         <select id="ai-persona" style="font-size:13px;padding:5px 8px">
-          <option value="default">务实教练（默认）</option>
-          <option value="strict">严厉教练</option>
-          <option value="gentle">温柔启蒙</option>
-          <option value="savage">毒舌损友</option>
-          <option value="master">老棋手（江湖气）</option>
+          <option value="default"${cfg.persona === 'default' ? ' selected' : ''}>务实教练（默认）</option>
+          <option value="strict"${cfg.persona === 'strict' ? ' selected' : ''}>严厉教练</option>
+          <option value="gentle"${cfg.persona === 'gentle' ? ' selected' : ''}>温柔启蒙</option>
+          <option value="savage"${cfg.persona === 'savage' ? ' selected' : ''}>毒舌损友</option>
+          <option value="master"${cfg.persona === 'master' ? ' selected' : ''}>老棋手（江湖气）</option>
         </select>
       </label>
-      <label style="color:#555"><input type="checkbox" id="ai-voice"> 🔊 语音朗读建议</label>
+      <label style="color:#555"><input type="checkbox" id="ai-voice"${cfg.voice ? ' checked' : ''}> 🔊 语音朗读建议</label>
     </div>
     <div><button class="btn primary" onclick="aiSave()">保存并启用</button>
     <button class="btn" onclick="document.getElementById('ai-set').remove()">关闭</button></div>
