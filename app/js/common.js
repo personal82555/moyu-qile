@@ -102,7 +102,7 @@ function aiSettings() {
       <button class="btn" type="button" onclick="toggleKeyVisible()" id="ai-key-btn" style="padding:9px 12px;white-space:nowrap">👁 显示</button>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <input id="ai-model" style="flex:1" placeholder="模型名 例：deepseek-v4.1-flash" value="${cfg.model || 'deepseek-v4.1-flash'}">
+      <input id="ai-model" style="flex:1" placeholder="模型名 例：mimo-v2.6-flash" value="${cfg.model || 'mimo-v2.6-flash'}">
       <button class="btn primary" type="button" onclick="aiTestConnection()" style="padding:9px 14px;white-space:nowrap">🔌 测试</button>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px">
