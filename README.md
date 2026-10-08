@@ -4,7 +4,7 @@
 
 浏览器打开就能玩，**手机 / 平板 / 电脑**都适配：不需要装 App、不需要注册账号、局域网零延迟、数据全部留在自己家里。
 
-![games](https://img.shields.io/badge/games-%E8%B1%A1%E6%A3%8B%20%7C%20%E4%BA%94%E5%AD%90%E6%A3%8B%20%7C%20%E5%86%9B%E6%A3%8B-blue) ![node](https://img.shields.io/badge/node-%3E%3D20-green) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![games](https://img.shields.io/badge/games-%E8%B1%A1%E6%A3%8B%20%7C%20%E4%BA%94%E5%AD%90%E6%A3%8B%20%7C%20%E5%86%9B%E6%A3%8B-blue) ![node](https://img.shields.io/badge/node-%3E%3D20-green) ![license](https://img.shields.io/badge/license-MIT-lightgrey) ![ghcr.io](https://img.shields.io/badge/ghcr.io-personal82555%2Fmoyu--qile-blue)
 
 ---
 
@@ -51,6 +51,30 @@
 </details>
 
 ## 🚀 部署（Docker）
+
+### 方式一：直接拉公开镜像（最快，推荐）
+
+镜像已发布到 GitHub 容器仓库，**公开、免登录、无需 clone 源码**：
+
+```bash
+docker pull ghcr.io/personal82555/moyu-qile:latest
+
+docker run -d --name moyu-qile --restart unless-stopped \
+  -p 7025:7025 \
+  -v "$PWD/data:/app/data" \
+  ghcr.io/personal82555/moyu-qile:latest
+```
+
+镜像会随仓库每次提交自动重建（GitHub Actions），`latest` 与日期 tag（如 `20261008`）并存，可固定版本：
+
+```bash
+docker pull ghcr.io/personal82555/moyu-qile:20261008   # 固定某天的版本
+```
+
+> 国内拉取 ghcr.io 慢或失败时，可用镜像加速站，例如：
+> `docker pull ghcr.nju.edu.cn/personal82555/moyu-qile:latest`
+
+### 方式二：从源码构建
 
 ```bash
 git clone https://github.com/personal82555/moyu-qile.git
