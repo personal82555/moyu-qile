@@ -268,6 +268,13 @@ window.junqiUndo = function() {
 // —— 存档 / 恢复 ——
 window.GAMEHOOKS = window.GAMEHOOKS || {};
 GAMEHOOKS.junqi = {
+  reviewPrompt: function () {
+    const hist = (jq && jq._hist) ? jq._hist : [];
+    const steps = hist.slice(-12).map(x => (x.type === 'flip' ? '翻子' : '走子/吃子') + '(' + x.r + ',' + x.c + ')' + (x.tr != null ? '→(' + x.tr + ',' + x.tc + ')' : '')).join('；');
+    const res = jq && jq.flagTaken ? ('军旗被' + (jq.flagTaken === 'r' ? '蓝方' : '红方') + '吃掉') : '结束';
+    return '【军棋（陆战棋翻棋）复盘】结果：' + res + '。总步数：' + (hist.length) + '。\n最后几步：' + (steps || '无') + '\n请点评开局翻子节奏、行营抢占与吃子取舍。';
+  },
+
   started: function () { return !!jq; },
   inProgress: function () { return !!(jq && (jq._hist || []).length > 0 && !jq.winner() && !window.__gameOver); },
   serialize: function () {

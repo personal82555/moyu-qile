@@ -128,18 +128,31 @@ const CTJ = { 'Content-Type': 'application/json; charset=utf-8' };
 
 async function aiHintAPI(req, res, body) {
   try {
-    const { baseUrl, apiKey, model, prompt } = JSON.parse(body);
+    const { baseUrl, apiKey, model, prompt, persona, task } = JSON.parse(body);
     if (!baseUrl || !model || !prompt) { res.writeHead(400, CTJ); return res.end(JSON.stringify({ error: '缺少 baseUrl/model/prompt' })); }
+    // 教练人格：同一句建议，语气不同，趣味和粘性差别很大
+    const PERSONA = {
+      default: '你是一位中文棋类教练，讲解直接、务实。',
+      strict:  '你是一位严厉的棋类教练，说话简短有力、一针见血，会直接指出错误，但始终是为了让学员进步。',
+      gentle:  '你是一位温柔的棋类启蒙老师，语气亲切鼓励，先肯定再做提示，绝不用打击式语言。',
+      savage:  '你是一位毒舌损友教练，会用调侃吐槽的口吻点评（但不下流、不侮辱），吐槽之后再给出真正有用的建议。',
+      master:  '你是一位老棋手，说话稳、有江湖气，喜欢用象棋俗语（如“马走日、炮翻山”“车正永无沉底月”）来讲解。'
+    };
+    const who = PERSONA[persona] || PERSONA.default;
+    const isReview = task === 'review';
+    const sys = isReview
+      ? who + '用户会给你一盘刚结束的棋局信息，请用 3 句话做复盘：①胜负关键在哪 ②双方最大的失误（点出具体位置或阶段）③一句最有用的改进建议。不要客套、不要重复棋谱。'
+      : who + '用户给出棋局描述，请用一句话（50字以内）直接告诉用户下一步怎么走，指出具体位置和理由。只输出建议本身，不要输出思考过程、不要客套。';
     const url = baseUrl.replace(/\/$/, '') + '/chat/completions';
     const payload = {
       model,
       stream: false,
       messages: [
-        { role: 'system', content: '你是一位中文棋类教练。用户给出棋局描述，请用一句话（50字以内）直接告诉用户下一步怎么走，指出具体位置和理由。只输出建议本身，不要输出思考过程、不要客套。' },
+        { role: 'system', content: sys },
         { role: 'user', content: prompt }
       ],
-      max_tokens: 512,
-      temperature: 0.6
+      max_tokens: isReview ? 700 : 512,
+      temperature: isReview ? 0.75 : 0.6
     };
     const u = new URL(url);
     const mod = u.protocol === 'https:' ? require('https') : require('http');

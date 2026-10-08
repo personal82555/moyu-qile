@@ -110,9 +110,12 @@ function gokEnd() {
     const r = gk.win5[0][0], c = gk.win5[0][1];
     const blackWin = gk.B[r][c] === 1;
     setStatus('gok-st', '🎉 ' + (blackWin ? '黑方胜！' : '白方胜！'));
-    if (blackWin) { recordGame({ game: 'gomoku', result: 'win', dur: durTxt, steps: gk.seq.length }); gameResultPopup(true, '🏆 黑方胜！', '五连达成 · 用时 ' + durTxt + ' · 共 ' + gk.seq.length + ' 手'); }
-    else { recordGame({ game: 'gomoku', result: 'lose', dur: durTxt, steps: gk.seq.length }); gameResultPopup(false, '💔 白方胜', 'AI 先连成五子 · 用时 ' + durTxt); }
-  } else { setStatus('gok-st', '平局'); recordGame({ game: 'gomoku', result: 'draw', dur: fmtDur(gameDurationSec()), steps: gk.seq.length }); gameResultPopup(null, '🤝 平局', ''); }
+    if (blackWin) { recordGame({ game: 'gomoku', result: 'win', dur: durTxt, steps: gk.seq.length }); window.__lastResult = 'win';
+  gameResultPopup(true, '🏆 黑方胜！', '五连达成 · 用时 ' + durTxt + ' · 共 ' + gk.seq.length + ' 手'); }
+    else { recordGame({ game: 'gomoku', result: 'lose', dur: durTxt, steps: gk.seq.length }); window.__lastResult = 'lose';
+  gameResultPopup(false, '💔 白方胜', 'AI 先连成五子 · 用时 ' + durTxt); }
+  } else { setStatus('gok-st', '平局'); recordGame({ game: 'gomoku', result: 'draw', dur: fmtDur(gameDurationSec()), steps: gk.seq.length }); window.__lastResult = 'draw';
+  gameResultPopup(null, '🤝 平局', ''); }
   return true;
 }
 window.gomokuUndo = function() {
@@ -133,6 +136,13 @@ window.gomokuUndo = function() {
 // —— 存档 / 恢复 ——
 window.GAMEHOOKS = window.GAMEHOOKS || {};
 GAMEHOOKS.gomoku = {
+  reviewPrompt: function () {
+    const seq = (gk && gk.seq) ? gk.seq : [];
+    const last = seq.slice(-10).map((p, i) => '第' + (seq.length - Math.min(10, seq.length) + i + 1) + '子：(' + p[0] + ',' + p[1] + ')').join('；');
+    const res = (window.__lastResult === 'win') ? '黑方（玩家）胜' : (window.__lastResult === 'lose' ? '白方（AI）胜' : '结束/平局');
+    return '【五子棋复盘】结果：' + res + '。总落子：' + seq.length + ' 子（黑先）。\n最后几手：' + (last || '无') + '\n请点评关键失误与改进方向。';
+  },
+
   started: function () { return !!gk; },
   inProgress: function () { return !!(gk && gk.seq.length > 0 && !gk.over && !window.__gameOver); },
   serialize: function () {

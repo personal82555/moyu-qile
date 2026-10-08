@@ -202,6 +202,15 @@ function redoFromMoves() {
 // —— 存档 / 恢复 ——
 window.GAMEHOOKS = window.GAMEHOOKS || {};
 GAMEHOOKS.chess = {
+  reviewPrompt: function () {
+    const res = cg && cg.moves.length
+      ? (cg.inCheck ? '' : '') : '';
+    let outcome = '本局结束';
+    try { if (cg && !cg.allLegal(cg.redTurn ? 'r' : 'b').length) outcome = (cg.redTurn ? '红方' : '黑方') + '无棋可走（被将死/困毙）'; } catch (e) {}
+    const last = (cg && cg.moves ? cg.moves.slice(-8) : []).map((m, i) => '第' + (cg.moves.length - Math.min(8, cg.moves.length) + i + 1) + '手：(' + m[0] + ',' + m[1] + ')→(' + m[2] + ',' + m[3] + ')').join('；');
+    return '【象棋复盘】结果：' + outcome + '。总手数：' + (cg ? cg.moves.length : 0) + '。\n最后几手：' + (last || '无') + '\n' + (aiBoardDesc ? aiBoardDesc() : '') ;
+  },
+
   started: function () { return !!cg; },
   inProgress: function () { return !!(cg && cg.moves.length > 0 && !cg.over && !window.__gameOver); },
   serialize: function () {

@@ -102,6 +102,18 @@ function aiSettings() {
       <button class="btn" type="button" onclick="toggleKeyVisible()" id="ai-key-btn" style="padding:9px 12px;white-space:nowrap">👁 显示</button>
     </div>
     <input id="ai-model" placeholder="模型名 例：deepseek-v4.1-flash" value="${cfg.model || 'deepseek-v4.1-flash'}">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px">
+      <label style="color:#555">🎭 教练人格
+        <select id="ai-persona" style="font-size:13px;padding:5px 8px">
+          <option value="default">务实教练（默认）</option>
+          <option value="strict">严厉教练</option>
+          <option value="gentle">温柔启蒙</option>
+          <option value="savage">毒舌损友</option>
+          <option value="master">老棋手（江湖气）</option>
+        </select>
+      </label>
+      <label style="color:#555"><input type="checkbox" id="ai-voice"> 🔊 语音朗读建议</label>
+    </div>
     <div><button class="btn primary" onclick="aiSave()">保存并启用</button>
     <button class="btn" onclick="aiTestConnection()">🔌 测试连接</button>
     <button class="btn" onclick="document.getElementById('ai-set').remove()">关闭</button></div>
@@ -146,7 +158,8 @@ function toggleKeyVisible() {
 }
 window.toggleKeyVisible = toggleKeyVisible;
 function aiSave() {
-  saveAICfg({ baseUrl: document.getElementById('ai-url').value.trim(), apiKey: document.getElementById('ai-key').value.trim(), model: document.getElementById('ai-model').value.trim() });
+  const ps = document.getElementById('ai-persona'), vc = document.getElementById('ai-voice');
+  saveAICfg({ baseUrl: document.getElementById('ai-url').value.trim(), apiKey: document.getElementById('ai-key').value.trim(), model: document.getElementById('ai-model').value.trim(), persona: ps ? ps.value : 'default', voice: !!(vc && vc.checked) });
   const b = document.getElementById('ai-set'); if (b) b.remove();
   gameRestart();
 }
@@ -203,15 +216,49 @@ async function aiCoach() {
   if (btn) { btn.disabled = true; btn.innerText = '🤖 思考中…'; }
   try {
     const resp = await fetch('/api/ai-hint', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, model: cfg.model, prompt: aiBoardDesc() }) });
+      body: JSON.stringify({ baseUrl: cfg.baseUrl, persona: cfg.persona || 'default', task: 'hint', apiKey: cfg.apiKey, model: cfg.model, prompt: aiBoardDesc() }) });
     const j = await resp.json();
     if (box) box.innerText = '💡 AI 教练：' + (j.hint || ('出错了：' + j.error));
+    if (j.hint) speakHint(j.hint, cfg);
   } catch (e) {
     if (box) box.innerText = '💡 AI 教练连接失败：' + e.message;
   }
   if (btn) { btn.disabled = false; btn.innerText = '🤖 AI 教我走'; }
 }
 
+// —— 语音朗读（浏览器自带，无需额外服务） ——
+function speakHint(text, cfg) {
+  try {
+    if (!(cfg || getAICfg()).voice) return;
+    if (!('speechSynthesis' in window)) return;
+    const clean = String(text).replace(/[「」【】*#`]/g, '').slice(0, 120);
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = 'zh-CN'; u.rate = 1.05; u.pitch = 1.0;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+window.speakHint = speakHint;
+
+// —— 赛后 AI 复盘 ——
+function aiReview() {
+  const cfg = getAICfg();
+  if (!cfg.baseUrl || !cfg.model) { aiSettings(); return; }
+  const key = curGameKey();
+  const h = (window.GAMEHOOKS || {})[key];
+  const box = document.getElementById('review-box');
+  if (box) { box.style.display = 'block'; box.innerText = '🧠 AI 正在复盘这盘棋…'; }
+  let prompt = '';
+  try { prompt = (h && typeof h.reviewPrompt === 'function') ? h.reviewPrompt() : ''; } catch (e) {}
+  if (!prompt) prompt = '本局已结束，请给出通用改进建议。';
+  fetch('/api/ai-hint', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ baseUrl: cfg.baseUrl, persona: cfg.persona || 'default', task: 'review', prompt }) })
+    .then(r => r.json()).then(j => {
+      if (box) box.innerText = j.hint ? ('🧠 AI 复盘（' + (cfg.persona === 'savage' ? '毒舌' : cfg.persona === 'strict' ? '严厉' : cfg.persona === 'gentle' ? '温柔' : cfg.persona === 'master' ? '老棋手' : '教练') + '）：\n' + j.hint) : ('复盘失败：' + j.error);
+      if (j.hint) speakHint(j.hint, cfg);
+    }).catch(e => { if (box) box.innerText = '复盘连接失败：' + e.message; });
+}
+window.aiReview = aiReview;
 function toggleAuto() {
   const on = localStorage.getItem('fnos_ai_auto') !== '1';
   localStorage.setItem('fnos_ai_auto', on ? '1' : '0');
@@ -242,7 +289,9 @@ function gameResultPopup(won, title, detail) {
     <div style="font-size:22px;font-weight:bold;margin:6px 0">${title}</div>
     ${detail ? `<div style="color:#666;margin-bottom:10px">${detail}</div>` : ''}
     <div><button class="btn primary" onclick="gameRestart()">⟳ 再来一局</button>
+    <button class="btn" onclick="aiReview()">🧠 AI 复盘这盘棋</button>
     <button class="btn" onclick="document.getElementById('result-modal').remove()">关闭</button></div>
+    <div id="review-box" style="display:none;text-align:left;margin-top:12px;padding:10px 12px;background:#f7f9fc;border:1px solid #dde5f0;border-radius:8px;font-size:14px;line-height:1.8;color:#333;white-space:pre-wrap;max-height:40vh;overflow:auto"></div>
   </div>`;
   document.getElementById('view').prepend(box);
 }
