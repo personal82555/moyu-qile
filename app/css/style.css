@@ -176,7 +176,14 @@ html, body { overscroll-behavior-y: contain; }
 .site-footer a { color: #1e6ef0; text-decoration: none; }
 .site-footer a:hover { text-decoration: underline; }
 .site-footer .sf-line { margin: 2px 0; }
-.site-footer .sf-links a { margin: 0 8px; white-space: nowrap; }
+.site-footer .sf-links { margin-top: 6px; }
+.site-footer .sf-links-title { display: block; color: #43536b; font-weight: 600; margin-bottom: 6px; }
+.site-footer .sf-links a {
+  display: inline-block; margin: 3px 5px; padding: 4px 12px; white-space: nowrap;
+  background: #eef4ff; border: 1px solid #d5e3fb; border-radius: 15px;
+  color: #1e5fd0; font-weight: 600; transition: all .15s;
+}
+.site-footer .sf-links a:hover { background: #1e6ef0; border-color: #1e6ef0; color: #fff; text-decoration: none; }
 .site-footer .sf-copy { color: #8a97a8; font-size: 12.5px; }
 .site-footer .sf-oss { color: #8a97a8; font-size: 12.5px; }
 .site-footer .sf-lic {
