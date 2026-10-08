@@ -175,48 +175,96 @@ function aiSave() {
 }
 function aiBoardDesc() {
   const k = currentRouteKey;
+  const CN = ['一','二','三','四','五','六','七','八','九'];
   if (k === 'chess' && cg) {
-    const lines = ['象棋当前局面（行 1=黑方底线, 行 10=红方底线, 列从左到右 a-i）：'];
+    // 全中文人性化描述：不提字母坐标，改说"从左往右第N列 / 从红方底线往上第N行"
+    const lines = [];
+    lines.push('【象棋局面】红方在下方（你执红），行数从红方底线往上数，列数从红方左手边往右数（1~9列）。棋子名用中文。');
+    const SIMP = { r: { '将': '帅', '士': '仕', '相': '相', '马': '马', '车': '车', '炮': '炮', '兵': '兵' },
+                   b: { '将': '将', '士': '士', '相': '象', '马': '马', '车': '车', '炮': '炮', '兵': '卒' } };
+    const name = (p) => SIMP[p.s][p.t] || DISP[p.s][p.t];
+    ['r', 'b'].forEach(side => {
+      const list = [];
+      for (let c = 0; c < 9; c++) {
+        for (let r = 9; r >= 0; r--) {           // r=9 是红方底线，从下往上
+          const p = cg.B[r][c];
+          if (p && p.s === side) {
+            const colFromRed = c + 1;            // 统一用红方视角（红方左手边为第1列）
+            const colName = (colFromRed === 1 ? '最左列' : colFromRed === 9 ? '最右列' : colFromRed === 5 ? '中路' : '从左往右第' + CN[colFromRed - 1] + '列');
+            const pos = (side === 'r')
+              ? '从红方底线往上第' + (10 - r) + '行'
+              : '从黑方底线往下第' + (r + 1) + '行';
+            list.push(name(p) + '（' + colName + '、' + pos + '）');
+          }
+        }
+      }
+      lines.push((side === 'r' ? '红方（你）' : '黑方（AI）') + '棋子：' + list.join('；'));
+    });
+    // 棋盘简图（中文棋子，供模型核对）
+    lines.push('棋盘简图（每行 9 格，"·"为空，最上面一行是黑方底线）：');
     for (let r = 0; r < 10; r++) {
       const row = [];
-      for (let c = 0; c < 9; c++) {
-        const p = cg.B[r][c];
-        if (p) row.push(String.fromCharCode(97 + c) + (10 - r) + ':' + (p.s === 'r' ? '红' : '黑') + DISP[p.s][p.t]);
-      }
-      lines.push(row.join(' '));
+      for (let c = 0; c < 9; c++) { const p = cg.B[r][c]; row.push(p ? (p.s === 'r' ? DISP.r[p.t] : DISP.b[p.t]) : '·'); }
+      lines.push('红方视角第' + (10 - r) + '行（' + (r === 0 ? '黑方底线' : r === 9 ? '红方底线' : '') + '）: ' + row.join(' '));
     }
-    lines.push('轮到 ' + (cg.redTurn ? '红方(你)' : '黑方(AI)'));
+    lines.push('现在轮到：' + (cg.redTurn ? '红方（你）' : '黑方（AI）') + '。');
     return lines.join('\n');
   }
   if (k === 'gomoku' && gk) {
-    const lines = ['五子棋 15x15（列 a-o，行 1-15，行1在上）：'];
+    const lines = [];
+    lines.push('【五子棋 15×15 局面】行列都从左上角开始数（第1行在最上面、第1列在最左边）。黑棋是"你"，白棋是"AI"。');
+    const puts = [];
+    const seq = gk.seq || [];
+    seq.slice(-14).forEach((pt, idx) => {
+      const step = seq.length - Math.min(14, seq.length) + idx + 1;
+      puts.push('第' + step + '手 ' + (step % 2 === 1 ? '黑（你）' : '白（AI）') + '下在 第' + (pt[0] + 1) + '行第' + (pt[1] + 1) + '列');
+    });
+    lines.push('最近落子：' + (puts.join('；') || '无'));
+    lines.push('棋盘简图（从上到下 15 行，每行 15 格；X=黑(你) O=白(AI) ·=空）：');
     for (let r = 0; r < 15; r++) {
-      let s = '';
-      for (let c = 0; c < 15; c++) s += gk.B[r][c] === 0 ? '.' : (gk.B[r][c] === 1 ? 'X' : 'O');
-      lines.push((r + 1) + ' ' + s.split('').join(' '));
+      let row = '';
+      for (let c = 0; c < 15; c++) row += (gk.B[r][c] === 0 ? '·' : (gk.B[r][c] === 1 ? 'X' : 'O'));
+      lines.push('第' + (r + 1) + '行 ' + row.split('').join(' '));
     }
-    lines.push('X=黑(你) O=白(AI) 轮到 ' + (gk.player === 1 ? '黑(你)' : '白(AI)'));
+    lines.push('现在轮到：' + (gk.player === 1 ? '黑棋（你）' : '白棋（AI）'));
     return lines.join('\n');
   }
   if (k === 'junqi' && jq) {
-    const lines = ['军棋翻棋局面（10行x6列；"军棋"=未翻开的暗牌，其余为已翻明）：'];
-    for (let r = 0; r < jq.R; r++) {
-      const row = [];
-      for (let c = 0; c < jq.C; c++) {
-        const p = jq.cells[r][c];
-        if (!p) row.push('空');
-        else if (!jq.shown[r][c]) row.push('暗');
-        else row.push((p.owner === 'r' ? '红' : '蓝') + FACE[p.kind]);
-      }
-      lines.push((r + 1) + ': ' + row.join(' '));
+    const lines = [];
+    lines.push('【军棋（陆战棋翻棋）局面】行数从上往下数（第1行在最上面），列数从左往右数（1~5列）。红方在下方（你执红）。');
+    const shown = [], hidden = [];
+    for (let r = 0; r < 12; r++) for (let c = 0; c < 5; c++) {
+      const p = jq.cells[r][c];
+      if (!p) continue;
+      if (jq.shown[r][c] && p.owner) shown.push((p.owner === 'r' ? '红方' : '蓝方') + FACE[p.kind] + '：从左数第' + (c + 1) + '列、从上往下第' + (r + 1) + '行');
+      else hidden.push('暗牌：从左数第' + (c + 1) + '列、从上往下第' + (r + 1) + '行');
     }
-    lines.push('轮到 ' + (jq.turnOwner() === 'r' ? '红方(你)' : '蓝方(AI)'));
-    lines.push('等级: 司令>军长>师长>旅长>团长>营长>连长>排长>工兵；工兵可挖雷，炸弹与任何子同归，将对方军旗扛回即胜');
+    lines.push('已翻开的棋子：' + (shown.join('；') || '无'));
+    lines.push('还没翻的暗牌：' + (hidden.length ? ('共 ' + hidden.length + ' 张，例如 ' + hidden.slice(0, 8).join('；')) : '无'));
+    lines.push('现在轮到：' + (jq.turnOwner() === 'r' ? '红方（你）' : '蓝方（AI）'));
     return lines.join('\n');
   }
-  return '';
+  return '本局暂无可用局面描述，请给出通用建议。';
 }
+
 function aiHint() { return document.getElementById('ai-hint'); }
+// —— 统一请求：若模型回了英文（完全没有中文），自动补一句"必须中文"再问一次 ——
+const CN_RE = /[\u4e00-\u9fa5]/;
+async function askAI(cfg, body) {
+  const call = async (extra) => {
+    const payload = Object.assign({}, body);
+    if (extra) payload.prompt = String(body.prompt || '') + extra;
+    const r = await fetch('/api/ai-hint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    return await r.json();
+  };
+  const j = await call('');
+  if (j && j.hint && !CN_RE.test(j.hint)) {
+    const j2 = await call('\n\n【重要】请务必用简体中文回答，不要出现任何英文单词和字母坐标。');
+    if (j2 && j2.hint && CN_RE.test(j2.hint)) return j2;
+  }
+  return j;
+}
+
 async function aiCoach() {
   const cfg = getAICfg();
   if (!cfg.baseUrl || !cfg.model) { aiSettings(); return; }
@@ -225,9 +273,7 @@ async function aiCoach() {
   const btn = document.getElementById('ai-coach-btn');
   if (btn) { btn.disabled = true; btn.innerText = '🤖 思考中…'; }
   try {
-    const resp = await fetch('/api/ai-hint', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ baseUrl: cfg.baseUrl, persona: cfg.persona || 'default', task: 'hint', apiKey: cfg.apiKey, model: cfg.model, prompt: aiBoardDesc() }) });
-    const j = await resp.json();
+    const j = await askAI(cfg, { baseUrl: cfg.baseUrl, persona: cfg.persona || 'default', task: 'hint', apiKey: cfg.apiKey, model: cfg.model, prompt: aiBoardDesc() });
     if (box) box.innerText = '💡 AI 教练：' + (j.hint || ('出错了：' + j.error));
     if (j.hint) speakHint(j.hint, cfg);
   } catch (e) {
@@ -261,9 +307,8 @@ function aiReview() {
   let prompt = '';
   try { prompt = (h && typeof h.reviewPrompt === 'function') ? h.reviewPrompt() : ''; } catch (e) {}
   if (!prompt) prompt = '本局已结束，请给出通用改进建议。';
-  fetch('/api/ai-hint', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ baseUrl: cfg.baseUrl, persona: cfg.persona || 'default', task: 'review', prompt }) })
-    .then(r => r.json()).then(j => {
+  askAI(cfg, { baseUrl: cfg.baseUrl, persona: cfg.persona || 'default', task: 'review', prompt })
+    .then(j => {
       if (box) box.innerText = j.hint ? ('🧠 AI 复盘（' + (cfg.persona === 'savage' ? '毒舌' : cfg.persona === 'strict' ? '严厉' : cfg.persona === 'gentle' ? '温柔' : cfg.persona === 'master' ? '老棋手' : '教练') + '）：\n' + j.hint) : ('复盘失败：' + j.error);
       if (j.hint) speakHint(j.hint, cfg);
     }).catch(e => { if (box) box.innerText = '复盘连接失败：' + e.message; });
@@ -384,7 +429,7 @@ function puzzleText(pz) {
     const B = Array.from({ length: N }, () => Array(N).fill(0));
     let p = 1;
     (pz.seq || []).forEach(([r, c]) => { B[r][c] = p; p = p === 1 ? 2 : 1; });
-    let out = '   ' + Array.from({length:N},(_,i)=>String.fromCharCode(97+i)).join('') + '\n';
+    let out = '（列从左往右 1~15，行从上往下 1~15；●=黑棋 ○=白棋 \u00b7=空）\n';
     B.forEach((row, i) => out += String(i+1).padStart(2) + ' ' + row.map(v => v === 0 ? '.' : (v === 1 ? 'X' : 'O')).join('') + '\n');
     return out;
   }
