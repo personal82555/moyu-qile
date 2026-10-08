@@ -680,7 +680,7 @@ window.autoSaveNow = autoSaveNow;
 function autoSaveTick() { if (gameInProgress()) autoSaveNow(); }
 function startAutoSave() {
   if (_autoSaveTimer) return;
-  _autoSaveTimer = setInterval(autoSaveTick, 60000);   // 每 1 分钟
+  _autoSaveTimer = setInterval(autoSaveTick, 300000);  // 每 5 分钟（降低磁盘/请求开销；切后台或关页时仍会立刻存一次）
   // 切到后台/离开页面前也补一次
   document.addEventListener('visibilitychange', function () { if (document.hidden) autoSaveNow(); });
   window.addEventListener('pagehide', function () { autoSaveNow(); });
