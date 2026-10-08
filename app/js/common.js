@@ -572,6 +572,8 @@ function bindLeaveGuard() {
     const target = (a.getAttribute('target') || '').toLowerCase();
     if (target && target !== '_self') return;
     if (a.hasAttribute('download')) return;
+    // 说明/文档/帮助类页面：一律不打断对局（即使万一同窗口打开也不弹）
+    if (/\/(about|help|doc|docs)[a-z0-9_-]*\.html?$/i.test(href)) return;
     if (!gameInProgress()) return;
     if (!window.confirm('当前棋局还没结束，确定要离开吗？\n\n提示：可以先点上面的「存档」把进度存下来，下次在「恢复」里继续（游戏每分钟也会自动存档一次）。')) {
       ev.preventDefault(); ev.stopPropagation();
