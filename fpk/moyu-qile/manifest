@@ -1,0 +1,15 @@
+appname               = moyu-qile
+version               = 1.0.0
+display_name          = 摸鱼棋乐
+desc                  = <b>三合一网页棋类：中国象棋 · 五子棋 · 军棋</b></br>纯 Node.js 自研、MIT 开源，装完即玩：</br>✅ AI 对战（3 档难度 / 5 种教练人格 / 走法点评 / 赛后复盘）</br>✅ 自动存档 + 战绩排行，刷新不丢局（每 5 分钟保存）</br>✅ 残局挑战 · 每日一题 · 战绩海报 · 棋风统计</br>✅ 手机竖屏适配，不填模型 AI 功能也有本地兜底</br>源码与反馈: github.com/personal82555/moyu-qile
+platform              = x86
+source                = thirdparty
+maintainer            = personal82555
+maintainer_url        = https://github.com/personal82555/moyu-qile
+distributor           = personal82555
+distributor_url       = https://github.com/personal82555/moyu-qile
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = moyu-qile.Application
+service_port          = 7025
+ctl_stop              = true

@@ -1,0 +1,20 @@
+{
+  "docker-project": {
+    "projects": [
+      {
+        "name": "moyu-qile",
+        "path": "docker"
+      }
+    ]
+  },
+  "data-share": {
+    "shares": [
+      {
+        "name": "moyu-qile"
+      },
+      {
+        "name": "moyu-qile/data"
+      }
+    ]
+  }
+}

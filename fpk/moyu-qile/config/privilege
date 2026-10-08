@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "docker-moyu-qile",
+    "groupname": "docker-moyu-qile"
+}

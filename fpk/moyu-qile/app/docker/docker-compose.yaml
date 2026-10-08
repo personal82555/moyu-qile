@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  webapp:
+    image: ghcr.io/personal82555/moyu-qile:latest
+    container_name: docker-moyu-qile
+    ports:
+      - "7025:7025"
+    volumes:
+      - "/var/apps/moyu-qile/shares/moyu-qile/data:/app/data"
