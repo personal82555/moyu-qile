@@ -56,29 +56,25 @@ jobs:
             && echo "✅ 匿名可拉取（public 生效）" \
             || echo "⚠️ 匿名仍不可拉取（包还是 private）"
 
-      # —— Docker Hub 双保险：凭据未配置时整段自动跳过，不影响 ghcr 流水线 ——
-      - name: Login to Docker Hub
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
+      # —— Docker Hub 双保险：secrets 未配置时输出跳过并正常退出，不影响 ghcr 流水线
+      #    注意：secrets 不能出现在 if 条件里（会触发 workflow file issue），判断放 shell 内做
       - name: Mirror image to Docker Hub
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
+          if [ -z "$DH_USER" ] || [ -z "$DH_TOKEN" ]; then
+            echo "⏭️ 未配置 DOCKERHUB_USERNAME / DOCKERHUB_TOKEN，跳过 Docker Hub 同步"
+            exit 0
+          fi
+          echo "$DH_TOKEN" | docker login docker.io -u "$DH_USER" --password-stdin
           docker buildx imagetools create \
-            -t "${{ secrets.DOCKERHUB_USERNAME }}/moyu-qile:latest" \
-            -t "${{ secrets.DOCKERHUB_USERNAME }}/moyu-qile:${{ github.run_number }}" \
-            -t "${{ secrets.DOCKERHUB_USERNAME }}/moyu-qile:20261008" \
+            -t "$DH_USER/moyu-qile:latest" \
+            -t "$DH_USER/moyu-qile:${{ github.run_number }}" \
+            -t "$DH_USER/moyu-qile:20261008" \
             "ghcr.io/${{ github.repository_owner }}/moyu-qile:latest"
           echo "✅ 已镜像到 Docker Hub（同 digest，不重新构建）"
-
-      - name: Verify Docker Hub anonymous pull
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
-        continue-on-error: true
-        run: |
           docker logout docker.io
-          docker manifest inspect "${{ secrets.DOCKERHUB_USERNAME }}/moyu-qile:latest" >/dev/null \
+          docker manifest inspect "$DH_USER/moyu-qile:latest" >/dev/null \
             && echo "✅ Docker Hub 匿名可拉取" \
-            || echo "⚠️ Docker Hub 匿名拉取失败（仓库可能还是 private）"
+            || echo "⚠️ Docker Hub 匿名拉取失败（仓库可能还是 private，需在 hub 网站设为 Public）"
