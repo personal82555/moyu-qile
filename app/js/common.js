@@ -547,7 +547,7 @@ function checkAutoResume(key) {
   if (!sv || !sv.steps && !sv.timer) { clearAutoSnapshot(key); return false; }
   setTimeout(function () {
     const ok = window.confirm('检测到上一局『' + (sv.label || '') + '』还没下完（' + (sv.steps || 0) + ' 手/子，'
-      + new Date(sv.savedAt || Date.now()).toLocaleString() + '）\n\n点「确定」继续这局，点「取消」重新开一局。');
+      + new Date(sv.savedAt || Date.now()).toLocaleString() + '）\n\n点「确定」继续这一局，点「取消」重新开一局。');
     const h = (window.GAMEHOOKS || {})[key];
     if (ok && h && typeof h.restore === 'function') { h.restore(sv); }
     else clearAutoSnapshot(key);
@@ -567,9 +567,13 @@ function bindLeaveGuard() {
     if (!a || a === document) return;
     const href = a.getAttribute('href') || '';
     if (!href || href.charAt(0) === '#' && (href === '#' || href === location.hash)) return;
-    if (/^javascript:/i.test(href)) return;
+    if (/^(javascript:|mailto:|tel:)/i.test(href)) return;
+    // 新窗口/新标签打开、下载类链接：不会离开当前对局，不拦截
+    const target = (a.getAttribute('target') || '').toLowerCase();
+    if (target && target !== '_self') return;
+    if (a.hasAttribute('download')) return;
     if (!gameInProgress()) return;
-    if (!window.confirm('当前棋局还没结束，确定要离开吗？\n\n提示：可以先点「💾 存档」把进度存下来，下次在「恢复」里继续。')) {
+    if (!window.confirm('当前棋局还没结束，确定要离开吗？\n\n提示：可以先点上面的「存档」把进度存下来，下次在「恢复」里继续（游戏每分钟也会自动存档一次）。')) {
       ev.preventDefault(); ev.stopPropagation();
     }
   }, true);
@@ -586,7 +590,7 @@ function bindLeaveGuard() {
     const isReload = k === 'f5' || ((e.ctrlKey || e.metaKey) && k === 'r');
     if (!isReload) return;
     if (!gameInProgress()) return;
-    if (!window.confirm('当前棋局还没结束，确定要刷新吗？\n\n（刷新后可在开局提示里选择继续上一局）')) {
+    if (!window.confirm('当前棋局还没结束，确定要刷新吗？\n\n（刷新后进入游戏时会问你要不要继续这一局）')) {
       e.preventDefault(); e.stopPropagation();
     }
   }, true);
