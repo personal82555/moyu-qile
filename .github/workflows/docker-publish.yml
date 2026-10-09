@@ -36,6 +36,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/moyu-qile:latest
+            ghcr.io/${{ github.repository_owner }}/moyu-qile:1.0.0
             ghcr.io/${{ github.repository_owner }}/moyu-qile:${{ github.run_number }}
             ghcr.io/${{ github.repository_owner }}/moyu-qile:20261008
 
@@ -70,6 +71,7 @@ jobs:
           echo "$DH_TOKEN" | docker login docker.io -u "$DH_USER" --password-stdin
           docker buildx imagetools create \
             -t "$DH_USER/moyu-qile:latest" \
+            -t "$DH_USER/moyu-qile:1.0.0" \
             -t "$DH_USER/moyu-qile:${{ github.run_number }}" \
             -t "$DH_USER/moyu-qile:20261008" \
             "ghcr.io/${{ github.repository_owner }}/moyu-qile:latest"
